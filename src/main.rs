@@ -10,24 +10,35 @@ fn main() {
 
     const RESOLUTION: u32 = 10;
     const RACE_NAME: &str = "2022-garmisch";
-    let start_pilot_number = 1265;
-    let end_pilot_number = 1266;
 
+    let pilots = api::get_ranking(RACE_NAME).unwrap();
     fs::create_dir_all("export");
 
-    for pilot in start_pilot_number..(end_pilot_number + 1) {
-        println!("Fetching Pilot: {}", pilot);
-        let result = api::get_pilot_data(&RACE_NAME, pilot, RESOLUTION);
+    let url = "http://bordairrace.live-tracking.com//data/2022-garmisch-vendor.json";
+    let pilot_data = api::get_pilot_data(url).unwrap();
 
-        // write to csv
-        let filename = format!("export/{}_pilot{}.csv", RACE_NAME, pilot);
+    for pilot in pilot_data {
+        let pilot_id = pilot.id.to_string();
+        let last_name = pilot.athlete.last_name;
+        let first_name = pilot.athlete.first_name;
+        println!("Fetching Pilot: {}", pilot_id);
+        let result = api::get_tracking(&RACE_NAME, &pilot_id, RESOLUTION);
 
-        let mut writer = csv::Writer::from_path(filename).unwrap();
+        match result {
+            Ok(res) => {
+                // write to csv
+                let filename = format!("export/{}_pilot_{}_{}_{}.csv", RACE_NAME, last_name, first_name, pilot_id);
 
-        writer.write_record(&["Timestamp", "Latitude", "Longitude", "Altitude", "Speed", "Unknown1", "Unknown2"]).expect("Failed to write data");
+                let mut writer = csv::Writer::from_path(filename).unwrap();
 
-        for d in result.unwrap().data.data {
-            writer.write_record(&[d.timestamp.to_string(), d.lat.to_string(), d.lon.to_string(), d.altitude.to_string(), d.speed.to_string(), d.unknown1.to_string(), d.unknown2.to_string()]);
+                writer.write_record(&["Timestamp", "Latitude", "Longitude", "Altitude", "Speed", "Unknown1", "Unknown2"]).expect("Failed to write data");
+
+                for d in res.data.data {
+                    writer.write_record(&[d.timestamp.to_string(), d.lat.to_string(), d.lon.to_string(), d.altitude.to_string(), d.speed.to_string(), d.unknown1.to_string(), d.unknown2.to_string()]);
+                }
+            },
+            Err(_) => println!("Unable to fetch track for: {} {} {}", last_name, first_name, pilot_id)
+
         }
     }
 }
