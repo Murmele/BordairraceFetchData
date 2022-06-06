@@ -1,0 +1,11 @@
+[package]
+name = "live_tracking_com_fetch_data"
+version = "0.1.0"
+authors = ["Martin Marmsoler <martin.marmsoler@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+live-tracking_com_api = { version = "0.1", path = "../live-tracking_api" }
+csv = "1.1"
+
+[dev-dependencies]
